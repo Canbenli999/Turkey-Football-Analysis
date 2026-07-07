@@ -20,7 +20,7 @@ Let me start with the stat that should have been the headline of every Turkish f
 
 **Türkiye took 71 shots across three group stage games.**
 
-That is the second most of any team in the entire tournament — only Belgium took more (73), and Belgium scored 5 goals doing it. More than France, who scored 10 goals. More than Argentina. More than Germany. 71 shots. In three games. Against Australia, Paraguay, and the United States.
+That is the second most of any team in the entire tournament — only Belgium took more (73), and Belgium scored 6 goals doing it. More than France, who scored 10 goals. More than Argentina. More than Germany. 71 shots. In three games. Against Australia, Paraguay, and the United States.
 
 We scored 3 goals. All of them against the USA, in a match that meant nothing for our qualification.
 
@@ -40,7 +40,7 @@ This wasn't a finishing problem in the narrow sense. This was a shot quality pro
 
 Here's where it gets more complicated.
 
-Turkey averaged **66.3% possession** across three games. That is the second highest figure in the entire group stage, behind only Spain. We had the ball more than almost anyone. We recycled it, we moved it, we pressed high to win it back when we lost it.
+Turkey averaged **66% possession** across three games. That is the highest figure of any group-stage-eliminated team, and second in the entire tournament behind only Spain. We had the ball more than almost anyone. We recycled it, we moved it, we pressed high to win it back when we lost it.
 
 In theory, high possession leads to more chances, which leads to more goals. The data across the tournament shows a loose positive correlation — teams that controlled the ball tended to score more. Turkey was the glaring exception.
 
@@ -78,7 +78,7 @@ The pattern is consistent. It's not one bad game. Across all three matches, Turk
 
 The attack gets all the attention, but the defense wasn't innocent either.
 
-Turkey conceded **5 goals** in three games, above the group stage average of 4.0. But the timing of those goals is what really hurt us.
+Turkey conceded **5 goals** in three games, above the group stage average of 4.5. But the timing of those goals is what really hurt us.
 
 Against Australia, we conceded in the 27th minute and never recovered — spending the rest of the game chasing the game with 70%+ possession and nothing to show for it. Against Paraguay, we conceded in the **2nd minute**. Two minutes. Before we'd even settled into the game. That goal forced us into exactly the kind of frantic, high-volume, low-quality attacking that the shot map captures.
 
@@ -126,23 +126,30 @@ Since this is also a portfolio project, I want to be transparent about the data 
 
 This is a common and underappreciated problem in sports data analysis. The data exists, it's publicly visible in a browser, but programmatic access is blocked.
 
-**The workaround:** I used a Chrome browser extension to read the page text from FBref as a real authenticated browser session, bypassing the scraping blocks entirely. The data was then hardcoded into the notebook as DataFrames — which for a completed, static tournament is actually the correct approach. The group stage is over, the numbers won't change, and hardcoded data is transparent and reproducible without network dependencies.
+**The workaround:** I used the **Sofascore API** directly, accessed through a Chrome browser extension acting as a real browser session. Sofascore's API is undocumented and blocks requests from scripts — but a real browser with real cookies gets through. I ran JavaScript fetch calls inside the browser console to hit three endpoints:
 
-Note: eight teams (Germany, Netherlands, Brazil, Morocco, Japan, Canada, South Africa, Paraguay) had already advanced to the knockout rounds when the FBref data was first fetched, so their group-stage shooting stats were prorated from cumulative FBref figures using the formula: group_stage_shots = total_shots × (3 / total_90s_played).
+1. `/api/v1/unique-tournament/16/season/58210/events/round/{1,2,3}` — to get all 72 match IDs across the three group-stage rounds
+2. `/api/v1/event/{match_id}/statistics` — called once per match to extract possession, shots, shots on target, and xG from the "Match overview" and "Shots" stat groups
 
-For the per-match xG and shot data, I used FotMob (which sources from Opta), again read through the browser extension, since FotMob has no public API.
+That's 75 API calls total (3 rounds + 72 matches), batched in groups to avoid timeouts. The responses were aggregated by team across all three of their group games.
+
+The result was then **hardcoded into the notebook as DataFrames**. This is intentional: the World Cup group stage is over, those numbers will never change, and hardcoded data is transparent, reproducible, and has zero network dependencies. Fetching live data makes sense for a dashboard that needs to update; for a static historical analysis, it's unnecessary complexity that can break.
+
+GF/GA (goals scored and conceded) were taken from FBref's group tables directly, then verified manually against official tournament records.
+
+For the per-match xG breakdown used in the shot map and match-by-match analysis, I used FotMob (which sources from Opta), again read through the browser extension.
 
 **The technical stack:**
 - **Python + Jupyter Notebook** — analysis environment
 - **pandas** — data manipulation and DataFrame construction
 - **matplotlib + numpy** — all charts and visualizations
 - **mplsoccer** — football pitch visualizations for the shot map
-- **Data sources:** FBref (squad/shooting stats), FotMob/Opta (per-match xG, shot counts, possession), xGscore.io (full 48-team xG table)
+- **Data sources:** Sofascore API (possession, shots, SoT, xG — group-stage exact for all 48 teams), FBref group tables (GF/GA), FotMob/Opta (per-match shot coordinates and xG)
 
 **What I'd do differently with a budget:** Sportmonks or Opta APIs would provide structured, per-shot coordinate data — making the shot map pixel-precise rather than zone-approximated. StatsBomb's open data is also worth exploring for historical competitions they've chosen to release.
 
-The full notebook and data are available on [GitHub](https://github.com/cbenli/turkey-football-analysis). The repo includes the `.gitignore` setup that excludes generated chart PNGs and Jupyter checkpoints — only the source notebook is versioned.
+The full notebook and data are available on [GitHub](https://github.com/Canbenli999/Turkey-Football-Analysis). The repo includes the `.gitignore` setup that excludes generated chart PNGs and Jupyter checkpoints — only the source notebook is versioned.
 
 ---
 
-*All data sourced from FBref.com (squad/shooting stats) and FotMob/Opta (per-match xG, shot counts, possession), xGscore.io (full 48-team xG table). Analysis and visualizations produced in Python using pandas, matplotlib, and mplsoccer.*
+*All data sourced from Sofascore API (group-stage exact stats, all 48 teams), FBref.com group tables (GF/GA), and FotMob/Opta (per-match xG and shot data). Analysis and visualizations produced in Python using pandas, matplotlib, and mplsoccer.*
